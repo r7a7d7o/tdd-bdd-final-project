@@ -137,8 +137,6 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(products[0].id, original_id)
         self.assertEqual(products[0].description, "testing")
 
-    
-
     def test_delete_a_product(self):
         """It should Delete a Product"""
         product = ProductFactory()
@@ -196,13 +194,179 @@ class TestProductModel(unittest.TestCase):
         for product in found:
             self.assertEqual(product.category, category)
 
-    def test_invalid_id_on_update_a_product(self):
-        """It should Update a Product"""
+    # ------------------------------------------------------------
+    # ADDED TESTS BELOW
+    # ------------------------------------------------------------
+
+    def test_find_by_price(self):
+        """It should Find Products by Price (Decimal and string)"""
+        products = ProductFactory.create_batch(5)
+        for product in products:
+            product.create()
+        price = products[0].price
+        count = len([p for p in products if p.price == price])
+        # Test with Decimal
+        found = Product.find_by_price(price)
+        self.assertEqual(found.count(), count)
+        for product in found:
+            self.assertEqual(product.price, price)
+        # Test with string input (should be converted to Decimal)
+        found_str = Product.find_by_price(str(price))
+        self.assertEqual(found_str.count(), count)
+        # Test with string containing quotes and spaces (as per method logic)
+        found_str_quote = Product.find_by_price(f' "{price}" ')
+        self.assertEqual(found_str_quote.count(), count)
+
+    def test_find_by_price_not_found(self):
+        """It should return empty list when price not found"""
+        product = ProductFactory()
+        product.create()
+        found = Product.find_by_price(Decimal('99999.99'))
+        self.assertEqual(found.count(), 0)
+
+    def test_invalid_id_on_update(self):
+        """It should raise DataValidationError when updating a product with no ID"""
         product = ProductFactory()
         product.id = None
-        product.create()
-        product.id = None
-        # Change it an save it
+        product.create()  # now it has an ID
+        product.id = None  # simulate missing ID
         product.description = "testing"
-        original_id = product.id
         self.assertRaises(DataValidationError, product.update)
+
+    def test_serialize_a_product(self):
+        """It should serialize a Product into a dictionary"""
+        product = ProductFactory()
+        product.name = "Fedora"
+        product.description = "A red hat"
+        product.price = Decimal("12.50")
+        product.available = True
+        product.category = Category.CLOTHS
+        product.create()
+        # Fetch fresh from DB to ensure all fields are correct
+        fresh = Product.find(product.id)
+        data = fresh.serialize()
+        self.assertEqual(data["id"], fresh.id)
+        self.assertEqual(data["name"], "Fedora")
+        self.assertEqual(data["description"], "A red hat")
+        self.assertEqual(data["price"], "12.50")
+        self.assertEqual(data["available"], True)
+        self.assertEqual(data["category"], "CLOTHS")
+
+    def test_deserialize_a_product(self):
+        """It should deserialize a dictionary into a Product"""
+        data = {
+            "name": "Hammer",
+            "description": "A sturdy tool",
+            "price": "19.99",
+            "available": False,
+            "category": "TOOLS"
+        }
+        product = Product()
+        product.deserialize(data)
+        self.assertEqual(product.name, "Hammer")
+        self.assertEqual(product.description, "A sturdy tool")
+        self.assertEqual(product.price, Decimal("19.99"))
+        self.assertEqual(product.available, False)
+        self.assertEqual(product.category, Category.TOOLS)
+
+    def test_deserialize_missing_key(self):
+        """It should raise DataValidationError when a required key is missing"""
+        data = {"name": "Hammer", "price": "19.99"}  # missing description
+        product = Product()
+        with self.assertRaises(DataValidationError) as context:
+            product.deserialize(data)
+        self.assertIn("missing description", str(context.exception))
+
+    def test_deserialize_bad_available_type(self):
+        """It should raise DataValidationError if 'available' is not a boolean"""
+        data = {
+            "name": "Hammer",
+            "description": "Tool",
+            "price": "19.99",
+            "available": "yes",  # string instead of bool
+            "category": "TOOLS"
+        }
+        product = Product()
+        with self.assertRaises(DataValidationError) as context:
+            product.deserialize(data)
+        self.assertIn("Invalid type for boolean [available]", str(context.exception))
+
+    def test_deserialize_bad_category(self):
+        """It should raise DataValidationError if category string does not match any enum"""
+        data = {
+            "name": "Hammer",
+            "description": "Tool",
+            "price": "19.99",
+            "available": True,
+            "category": "INVALID_CATEGORY"
+        }
+        product = Product()
+        with self.assertRaises(DataValidationError) as context:
+            product.deserialize(data)
+        self.assertIn("Invalid attribute", str(context.exception))
+
+    def test_deserialize_bad_data_type(self):
+        """It should raise DataValidationError when data is not a dict (TypeError)"""
+        product = Product()
+        with self.assertRaises(DataValidationError):
+            product.deserialize("not a dict")
+
+    def test_deserialize_with_none(self):
+        """It should raise DataValidationError when data is None"""
+        product = Product()
+        with self.assertRaises(DataValidationError):
+            product.deserialize(None)
+
+    # def test_deserialize_invalid_price(self):
+    #     """It should raise an exception when price cannot be converted to Decimal"""
+    #     data = {
+    #         "name": "Hammer",
+    #         "description": "Tool",
+    #         "price": "not a number",
+    #         "available": True,
+    #         "category": "TOOLS"
+    #     }
+    #     product = Product()
+    #     # The current implementation does not explicitly catch decimal.InvalidOperation,
+    #     # so it will raise that exception. This test ensures the behavior is documented.
+    #     with self.assertRaises(InvalidOperation):
+    #         product.deserialize(data)
+
+    def test_repr_method(self):
+        """It should return the correct string representation"""
+        product = Product(name="Screwdriver", description="Tool", price=5.99)
+        product.id = 42
+        self.assertEqual(repr(product), "<Product Screwdriver id=[42]>")
+
+    def test_category_enum_values(self):
+        """It should have the correct Category enum members"""
+        self.assertEqual(Category.UNKNOWN.value, 0)
+        self.assertEqual(Category.CLOTHS.value, 1)
+        self.assertEqual(Category.FOOD.value, 2)
+        self.assertEqual(Category.HOUSEWARES.value, 3)
+        self.assertEqual(Category.AUTOMOTIVE.value, 4)
+        self.assertEqual(Category.TOOLS.value, 5)
+        # Verify name access
+        self.assertEqual(Category.UNKNOWN.name, "UNKNOWN")
+        self.assertEqual(Category.CLOTHS.name, "CLOTHS")
+
+    def test_product_category_default(self):
+        """It should default to Category.UNKNOWN if not provided"""
+        product = Product(name="Mystery", description="?", price=0)
+        self.assertEqual(product.category, None)  # Column default is set on DB side
+        # After adding to DB, the default should be applied
+        product.create()
+        self.assertEqual(product.category, Category.UNKNOWN)
+
+    def test_find_by_category_with_enum_default(self):
+        """It should find products using the default Category.UNKNOWN"""
+        product = ProductFactory(category=Category.UNKNOWN)
+        product.create()
+        found = Product.find_by_category()
+        self.assertEqual(found.count(), 1)
+        self.assertEqual(found[0].category, Category.UNKNOWN)
+
+    def test_find_nonexistent_product(self):
+        """It should return None when finding a product by non-existent ID"""
+        found = Product.find(99999)
+        self.assertIsNone(found)
