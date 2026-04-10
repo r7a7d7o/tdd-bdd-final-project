@@ -219,18 +219,18 @@ class TestProductRoutes(TestCase):
         resp3 = self.client.post(BASE_URL, json=product3.serialize())
         self.assertEqual(resp3.status_code, status.HTTP_201_CREATED)
 
-        # response = self.client.get(BASE_URL, query_string={"name": "apple", "category": "FOOD"})
-        # self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # data = response.get_json()
-        # self.assertEqual(len(data), 1)
-        # self.assertEqual(data[0]["name"], "Apple Pie")
+        response = self.client.get(BASE_URL, query_string={"name": "apple", "category":"FOOD" })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["name"], "Apple Pie")
 
 
 
-    # def test_list_products_invalid_category(self):
-    #     """It should return 400 when filtering by invalid category"""
-    #     response = self.client.get(BASE_URL, query_string={"category": "INVALID"})
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    def test_list_products_invalid_category(self):
+        """It should return 400 when filtering by invalid category"""
+        response = self.client.get(BASE_URL, query_string={"category": "INVALID"})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_list_products_invalid_availability(self):
         """It should return 400 when filtering by invalid availability value"""
@@ -277,12 +277,12 @@ class TestProductRoutes(TestCase):
         response = self.client.put(f"{BASE_URL}/99999", json=update_data)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    # def test_update_product_missing_data(self):
-    #     """It should return 400 when update data is incomplete"""
-    #     product = self._create_products(1)[0]
-    #     update_data = {"name": "Only Name"}  # missing required fields
-    #     response = self.client.put(f"{BASE_URL}/{product.id}", json=update_data)
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    def test_update_product_missing_data(self):
+        """It should return 400 when update data is incomplete"""
+        product = self._create_products(1)[0]
+        update_data = {"name": "Only Name"}  # missing required fields
+        response = self.client.put(f"{BASE_URL}/{product.id}", json=update_data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     # ######################################################################
     # # T E S T   D E L E T E   A   P R O D U C T
