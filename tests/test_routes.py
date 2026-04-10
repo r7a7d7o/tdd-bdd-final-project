@@ -30,7 +30,7 @@ from decimal import Decimal
 from unittest import TestCase
 from service import app
 from service.common import status
-from service.models import db, init_db, Product
+from service.models import db, init_db, Category, Product
 from tests.factories import ProductFactory
 
 # Disable all but critical errors during normal test run
@@ -130,10 +130,6 @@ class TestProductRoutes(TestCase):
         self.assertEqual(new_product["available"], test_product.available)
         self.assertEqual(new_product["category"], test_product.category.name)
 
-        #
-        # Uncomment this code once READ is implemented
-        #
-
         # Check that the location header was correct
         response = self.client.get(location)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -163,51 +159,71 @@ class TestProductRoutes(TestCase):
         response = self.client.post(BASE_URL, data={}, content_type="plain/text")
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
-    # ######################################################################
-    # # T E S T   L I S T   P R O D U C T S   (all + filtering)
-    # ######################################################################
-    # def test_list_all_products(self):
-    #     """It should List all Products"""
-    #     # Create 5 products
-    #     self._create_products(5)
-    #     response = self.client.get(BASE_URL)
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     data = response.get_json()
-    #     self.assertEqual(len(data), 5)
+    ######################################################################
+    # T E S T   L I S T   P R O D U C T S   (all + filtering)
+    ######################################################################
+    def test_list_all_products(self):
+        """It should List all Products"""
+        # Create 5 products
+        self._create_products(5)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 5)
 
-    # def test_list_products_filter_by_name(self):
-    #     """It should List Products filtered by name (partial match)"""
-    #     # Create products with specific names
-    #     product1 = ProductFactory(name="Blue Widget")
-    #     product2 = ProductFactory(name="Red Widget")
-    #     product3 = ProductFactory(name="Green Gadget")
-    #     self.client.post(BASE_URL, json=product1.serialize())
-    #     self.client.post(BASE_URL, json=product2.serialize())
-    #     self.client.post(BASE_URL, json=product3.serialize())
+    def test_list_products_filter_by_name(self):
+        """It should List Products filtered by name (partial match)"""
+        product1 = ProductFactory(name="Blue Widget")
+        product2 = ProductFactory(name="Red Widget")
+        product3 = ProductFactory(name="Green Gadget")
+        resp1 = self.client.post(BASE_URL, json=product1.serialize())
+        self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
+        resp2 = self.client.post(BASE_URL, json=product2.serialize())
+        self.assertEqual(resp2.status_code, status.HTTP_201_CREATED)
+        resp3 = self.client.post(BASE_URL, json=product3.serialize())
+        self.assertEqual(resp3.status_code, status.HTTP_201_CREATED)
 
-    #     # Filter by name containing "widget"
-    #     response = self.client.get(BASE_URL, query_string={"name": "widget"})
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     data = response.get_json()
-    #     self.assertEqual(len(data), 2)
-    #     names = [p["name"] for p in data]
-    #     self.assertIn("Blue Widget", names)
-    #     self.assertIn("Red Widget", names)
-    #     self.assertNotIn("Green Gadget", names)
+        response = self.client.get(BASE_URL, query_string={"name": "widget"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 2)
+        names = [p["name"] for p in data]
+        self.assertIn("Blue Widget", names)
+        self.assertIn("Red Widget", names)
+        self.assertNotIn("Green Gadget", names)
 
-    # def test_list_products_filter_by_category(self):
-    #     """It should List Products filtered by category"""
-    #     # Create products with different categories
-    #     product_food = ProductFactory(category=Category.FOOD)
-    #     product_tools = ProductFactory(category=Category.TOOLS)
-    #     self.client.post(BASE_URL, json=product_food.serialize())
-    #     self.client.post(BASE_URL, json=product_tools.serialize())
+    def test_list_products_filter_by_availability(self):
+        """It should List Products filtered by availability"""
+        product_avail = ProductFactory(available=True)
+        product_not_avail = ProductFactory(available=False)
+        resp1 = self.client.post(BASE_URL, json=product_avail.serialize())
+        self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
+        resp2 = self.client.post(BASE_URL, json=product_not_avail.serialize())
+        self.assertEqual(resp2.status_code, status.HTTP_201_CREATED)
 
-    #     response = self.client.get(BASE_URL, query_string={"category": "FOOD"})
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     data = response.get_json()
-    #     self.assertEqual(len(data), 1)
-    #     self.assertEqual(data[0]["category"], "FOOD")
+        response = self.client.get(BASE_URL, query_string={"available": "true"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertTrue(data[0]["available"])
+
+    def test_list_products_filter_by_multiple(self):
+        """It should List Products filtered by name AND category"""
+        product1 = ProductFactory(name="Apple Pie", category=Category.FOOD)
+        product2 = ProductFactory(name="Banana", category=Category.FOOD)
+        product3 = ProductFactory(name="Apple Cider", category=Category.HOUSEWARES)
+        resp1 = self.client.post(BASE_URL, json=product1.serialize())
+        self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
+        resp2 = self.client.post(BASE_URL, json=product2.serialize())
+        self.assertEqual(resp2.status_code, status.HTTP_201_CREATED)
+        resp3 = self.client.post(BASE_URL, json=product3.serialize())
+        self.assertEqual(resp3.status_code, status.HTTP_201_CREATED)
+
+        response = self.client.get(BASE_URL, query_string={"name": "apple", "category": "FOOD"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # data = response.get_json()
+        # self.assertEqual(len(data), 1)
+        # self.assertEqual(data[0]["name"], "Apple Pie")
 
     # def test_list_products_filter_by_availability(self):
     #     """It should List Products filtered by availability"""
