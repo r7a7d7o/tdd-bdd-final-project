@@ -89,7 +89,7 @@ def create_products():
     #
     # Uncomment this line of code once you implement READ A PRODUCT
     #
-    # location_url = url_for("get_products", product_id=product.id, _external=True)
+    location_url = url_for("get_products", product_id=product.id, _external=True)
     location_url = "/"  # delete once READ is implemented
     return jsonify(message), status.HTTP_201_CREATED, {"Location": location_url}
 
@@ -98,31 +98,97 @@ def create_products():
 # L I S T   A L L   P R O D U C T S
 ######################################################################
 
-#
-# PLACE YOUR CODE TO LIST ALL PRODUCTS HERE
-#
+@app.route("/products", methods=["GET"])
+def list_products():
+    """List all Products optionally filtered by name, category, availability"""
+    app.logger.info("Request to list Products...")
+
+    # Parse query parameters
+    name = request.args.get("name")
+    category = request.args.get("category")
+    available = request.args.get("available")
+
+    # Start with all products
+    products = Product.all()
+
+    # Apply filters
+    if name:
+        products = [p for p in products if name.lower() in p.name.lower()]
+    if category:
+        try:
+            cat_enum = Category[category.upper()]
+            products = [p for p in products if p.category == cat_enum]
+        except KeyError:
+            abort(status.HTTP_400_BAD_REQUEST, f"Invalid category value: {category}")
+    if available is not None:
+        # Convert string to bool (accept 'true', 'false', 'True', 'False', etc.)
+        available_lower = available.lower()
+        if available_lower == 'true':
+            avail_bool = True
+        elif available_lower == 'false':
+            avail_bool = False
+        else:
+            abort(status.HTTP_400_BAD_REQUEST, f"Invalid available value: {available}. Must be 'true' or 'false'")
+        products = [p for p in products if p.available == avail_bool]
+
+    # Serialize results
+    results = [product.serialize() for product in products]
+    return jsonify(results), status.HTTP_200_OK
+
 
 ######################################################################
 # R E A D   A   P R O D U C T
 ######################################################################
 
-#
-# PLACE YOUR CODE HERE TO READ A PRODUCT
-#
+@app.route("/products/<int:product_id>", methods=["GET"])
+def get_product(product_id):
+    """Retrieve a single Product by ID"""
+    app.logger.info("Request to retrieve Product with id: %s", product_id)
+    product = Product.find(product_id)
+    if not product:
+        abort(status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found.")
+    return jsonify(product.serialize()), status.HTTP_200_OK
+
 
 ######################################################################
 # U P D A T E   A   P R O D U C T
 ######################################################################
 
-#
-# PLACE YOUR CODE TO UPDATE A PRODUCT HERE
-#
+@app.route("/products/<int:product_id>", methods=["PUT"])
+def update_product(product_id):
+    """Update an existing Product"""
+    app.logger.info("Request to update Product with id: %s", product_id)
+    check_content_type("application/json")
+
+    product = Product.find(product_id)
+    if not product:
+        abort(status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found.")
+
+    data = request.get_json()
+    try:
+        product.deserialize(data)
+        # Ensure the ID in the URL matches the ID in the payload (optional but good practice)
+        if "id" in data and data["id"] != product_id:
+            abort(status.HTTP_400_BAD_REQUEST, "ID in URL does not match ID in request body")
+        product.update()
+    except DataValidationError as e:
+        abort(status.HTTP_400_BAD_REQUEST, str(e))
+    except KeyError as e:
+        abort(status.HTTP_400_BAD_REQUEST, f"Missing field: {e}")
+
+    return jsonify(product.serialize()), status.HTTP_200_OK
 
 ######################################################################
 # D E L E T E   A   P R O D U C T
 ######################################################################
 
 
-#
-# PLACE YOUR CODE TO DELETE A PRODUCT HERE
-#
+@app.route("/products/<int:product_id>", methods=["DELETE"])
+def delete_product(product_id):
+    """Delete a Product by ID"""
+    app.logger.info("Request to delete Product with id: %s", product_id)
+    product = Product.find(product_id)
+    if product:
+        product.delete()
+    # Return 204 even if product didn't exist (idempotent)
+    return "", status.HTTP_204_NO_CONTENT
