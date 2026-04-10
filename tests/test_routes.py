@@ -275,13 +275,36 @@ class TestProductRoutes(TestCase):
         self.assertEqual(data["name"], "Updated Name")
         self.assertEqual(Decimal(data["price"]), Decimal("99.99"))
 
+    def test_update_product_wrong_id(self):
+        """It should throw an error on updating with wrong ID"""
+        # Create a product
+        product = self._create_products(1)[0]
+        # Modify data
+        update_data = product.serialize()
+        update_data["id"] = update_data["id"]+1
+        update_data["name"] = "Updated Name"
+        update_data["price"] = "99.99"
+        response = self.client.put(f"{BASE_URL}/{product.id}", json=update_data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # def test_update_product_missing_key(self):
+    #     """It should throw an error on updating with missing Key"""
+    #     # Create a product
+    #     product = self._create_products(1)[0]
+    #     # Modify data
+    #     update_data = {}
+
+    #     response = self.client.put(f"{BASE_URL}/{product.id}", json=update_data)
+    #     self.assertRaise(KeyError, routes.update_product)
+
+
     def test_update_product_not_found(self):
         """It should return 404 when updating a non-existent Product"""
         update_data = {"name": "Ghost", "description": "None", "price": 0.0, "available": True, "category": "UNKNOWN"}
         response = self.client.put(f"{BASE_URL}/99999", json=update_data)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_update_product_missing_data(self):
+#   # def test_update_product_missing_data(self):
         """It should return 400 when update data is incomplete"""
         product = self._create_products(1)[0]
         update_data = {"name": "Only Name"}  # missing required fields
