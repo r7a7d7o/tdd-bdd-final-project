@@ -167,10 +167,10 @@ def update_product(product_id):
         if "id" in data and data["id"] != product_id:
             abort(status.HTTP_400_BAD_REQUEST, "ID in URL does not match ID in request body")
         product.update()
-    except DataValidationError as e:
-        abort(status.HTTP_400_BAD_REQUEST, str(e))
-    except KeyError as e:
-        abort(status.HTTP_400_BAD_REQUEST, f"Missing field: {e}")
+    except DataValidationError as error:
+        abort(status.HTTP_400_BAD_REQUEST, str(error))
+    except KeyError as error:
+        abort(status.HTTP_400_BAD_REQUEST, f"Missing field: {error}")
 
     return jsonify(product.serialize()), status.HTTP_200_OK
 

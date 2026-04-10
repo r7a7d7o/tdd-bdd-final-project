@@ -219,13 +219,11 @@ class TestProductRoutes(TestCase):
         resp3 = self.client.post(BASE_URL, json=product3.serialize())
         self.assertEqual(resp3.status_code, status.HTTP_201_CREATED)
 
-        response = self.client.get(BASE_URL, query_string={"name": "apple", "category":"FOOD" })
+        response = self.client.get(BASE_URL, query_string={"name": "apple", "category": "FOOD"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]["name"], "Apple Pie")
-
-
 
     def test_list_products_invalid_category(self):
         """It should return 400 when filtering by invalid category"""
