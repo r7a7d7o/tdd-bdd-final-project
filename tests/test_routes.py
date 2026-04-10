@@ -207,6 +207,12 @@ class TestProductRoutes(TestCase):
         self.assertEqual(len(data), 1)
         self.assertTrue(data[0]["available"])
 
+        response = self.client.get(BASE_URL, query_string={"available": "false"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["available"], False)
+
     def test_list_products_filter_by_multiple(self):
         """It should List Products filtered by name AND category"""
         product1 = ProductFactory(name="Apple Pie", category=Category.FOOD)
