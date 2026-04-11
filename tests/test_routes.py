@@ -22,7 +22,7 @@ Test cases can be run with the following:
   codecov --token=$CODECOV_TOKEN
 
   While debugging just these tests it's convenient to use this:
-    nosetests --stop tests/test_service.py:TestProductService
+    nosetests --stop tests/test_routes.py:TestProductRoutes
 """
 import os
 import logging
