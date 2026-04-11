@@ -205,6 +205,23 @@ class TestProductRoutes(TestCase):
         self.assertEqual(updated_product["description"], "unknown")
 
     ######################################################################
+    # TEST UPDATE A PRODUCT WITH WRONG ID
+    #######################################################################
+    def test_update_product_with_wrong_id(self):
+        """It should get status 404 not found"""
+        # create a product to update
+        test_product = ProductFactory()
+        response = self.client.post(BASE_URL, json=test_product.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # update the product with wrong id
+        new_product = response.get_json()
+        new_product["description"] = "unknown"
+        new_product['id'] = new_product['id']+1
+        response = self.client.put(f"{BASE_URL}/{new_product['id']}", json=new_product)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    ######################################################################
     # TEST DELETE A PRODUCT
     ######################################################################
     def test_delete_product(self):

@@ -20,7 +20,7 @@ Product Store Service with UI
 """
 from flask import jsonify, request, abort
 from flask import url_for  # noqa: F401 pylint: disable=unused-import
-from service.models import Product, Category, DataValidationError
+from service.models import Product, Category
 from service.common import status  # HTTP Status Codes
 from . import app
 
@@ -149,35 +149,6 @@ def get_product(product_id):
 
     app.logger.info("Returning product: %s", product.name)
     return product.serialize(), status.HTTP_200_OK
-
-######################################################################
-# U P D A T E   A   P R O D U C T
-######################################################################
-
-
-@app.route("/products/<int:product_id>", methods=["PUT"])
-def update_product(product_id):
-    """Update an existing Product"""
-    app.logger.info("Request to update Product with id: %s", product_id)
-    check_content_type("application/json")
-
-    product = Product.find(product_id)
-    if not product:
-        abort(status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found.")
-
-    data = request.get_json()
-    try:
-        product.deserialize(data)
-        # Ensure the ID in the URL matches the ID in the payload (optional but good practice)
-        if "id" in data and data["id"] != product_id:
-            abort(status.HTTP_400_BAD_REQUEST, "ID in URL does not match ID in request body")
-        product.update()
-    except DataValidationError as error:
-        abort(status.HTTP_400_BAD_REQUEST, str(error))
-    except KeyError as error:
-        abort(status.HTTP_400_BAD_REQUEST, f"Missing field: {error}")
-
-    return jsonify(product.serialize()), status.HTTP_200_OK
 
 ######################################################################
 # UPDATE AN EXISTING PRODUCT
