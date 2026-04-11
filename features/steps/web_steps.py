@@ -104,9 +104,20 @@ def step_impl(context, element_name):
 # to get the element id of any button
 ##################################################################
 
-@when(u'I press the "Create" button')
+@when('I press the "{button}" button')
 def step_impl(context):
-    raise NotImplementedError(u'STEP: When I press the "Create" button')
+    button_id = button.lower() + '-btn'
+    context.driver.find_element_by_id(button_id).click()
+
+@then('I should see "{name}" in the results')
+def step_impl(context, name):
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element(
+            (By.ID, 'search_results'),
+            name
+        )
+    )
+    assert(found)
 
 
 @then(u'I should see the message "Success"')
@@ -114,64 +125,14 @@ def step_impl(context):
     raise NotImplementedError(u'STEP: Then I should see the message "Success"')
 
 
-@when(u'I press the "Clear" button')
-def step_impl(context):
-    raise NotImplementedError(u'STEP: When I press the "Clear" button')
-
-
-@when(u'I press the "Retrieve" button')
-def step_impl(context):
-    raise NotImplementedError(u'STEP: When I press the "Retrieve" button')
-
-
-@when(u'I press the "Search" button')
-def step_impl(context):
-    raise NotImplementedError(u'STEP: When I press the "Search" button')
-
-
-@when(u'I press the "Update" button')
-def step_impl(context):
-    raise NotImplementedError(u'STEP: When I press the "Update" button')
-
-
-@then(u'I should see "Fedora" in the results')
-def step_impl(context):
-    raise NotImplementedError(u'STEP: Then I should see "Fedora" in the results')
-
-
 @then(u'I should not see "Hat" in the results')
 def step_impl(context):
     raise NotImplementedError(u'STEP: Then I should not see "Hat" in the results')
 
 
-@when(u'I press the "Delete" button')
-def step_impl(context):
-    raise NotImplementedError(u'STEP: When I press the "Delete" button')
-
-
 @then(u'I should see the message "Product has been Deleted!"')
 def step_impl(context):
     raise NotImplementedError(u'STEP: Then I should see the message "Product has been Deleted!"')
-
-
-@then(u'I should see "Hat" in the results')
-def step_impl(context):
-    raise NotImplementedError(u'STEP: Then I should see "Hat" in the results')
-
-
-@then(u'I should see "Shoes" in the results')
-def step_impl(context):
-    raise NotImplementedError(u'STEP: Then I should see "Shoes" in the results')
-
-
-@then(u'I should see "Big Mac" in the results')
-def step_impl(context):
-    raise NotImplementedError(u'STEP: Then I should see "Big Mac" in the results')
-
-
-@then(u'I should see "Sheets" in the results')
-def step_impl(context):
-    raise NotImplementedError(u'STEP: Then I should see "Sheets" in the results')
 
 
 @then(u'I should not see "Shoes" in the results')
