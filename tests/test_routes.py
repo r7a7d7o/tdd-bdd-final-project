@@ -288,7 +288,7 @@ class TestProductRoutes(TestCase):
             self.assertEqual(product["category"], category.name)
 
     ######################################################################
-    # TEST LIST BY CATEGORY
+    # TEST LIST BY AVAILABILITY
     ######################################################################
     def test_query_by_availability(self):
         """It should Query Products by availability"""
